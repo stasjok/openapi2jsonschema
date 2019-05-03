@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import re
 import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
@@ -16,6 +17,7 @@ from openapi2jsonschema.util import (
     allow_null_optional_fields,
     append_no_duplicates,
     change_dict_values,
+    get_components_from_body_definition,
     replace_int_or_string,
 )
 
@@ -49,8 +51,22 @@ from openapi2jsonschema.util import (
     is_flag=True,
     help="Prohibits properties not in the schema (additionalProperties: false)",
 )
+@click.option(
+    "--include-bodies",
+    is_flag=True,
+    help="Include request and response bodies as if they are components",
+)
 @click.argument("schema", metavar="SCHEMA_URL")
-def default(output: Path, schema, prefix, stand_alone, expanded, kubernetes, strict):
+def default(
+    output: Path,
+    schema,
+    prefix,
+    stand_alone,
+    expanded,
+    kubernetes,
+    strict,
+    include_bodies,
+):
     """
     Converts a valid OpenAPI specification into a set of JSON Schema files
     """
@@ -128,6 +144,37 @@ def default(output: Path, schema, prefix, stand_alone, expanded, kubernetes, str
         components = data["definitions"]
     else:
         components = data["components"]["schemas"]
+
+    if include_bodies:
+        for path, path_definition in data["paths"].items():
+            for http_method, http_method_definition in path_definition.items():
+                name_prefix_fmt = "paths_{:s}_{:s}_{{:s}}_".format(
+                    # Paths "/" and "/root" will conflict,
+                    # no idea how to solve this elegantly.
+                    path.lstrip("/").replace("/", "_") or "root",
+                    http_method.upper(),
+                )
+                name_prefix_fmt = re.sub(
+                    r"\{([^:\}]+)\}",
+                    r"_\1_",
+                    name_prefix_fmt,
+                )
+                if "requestBody" in http_method_definition:
+                    components.update(
+                        get_components_from_body_definition(
+                            http_method_definition["requestBody"],
+                            prefix=name_prefix_fmt.format("request"),
+                        )
+                    )
+                responses = http_method_definition["responses"]
+                for response_code, response in responses.items():
+                    response_name_part = "response_{}".format(response_code)
+                    components.update(
+                        get_components_from_body_definition(
+                            response,
+                            prefix=name_prefix_fmt.format(response_name_part),
+                        )
+                    )
 
     for title in components:
         kind = title.split(".")[-1]
