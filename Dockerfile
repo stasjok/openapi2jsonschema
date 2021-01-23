@@ -1,5 +1,5 @@
-FROM python:2-alpine
-MAINTAINER Gareth Rushgrove "gareth@morethanseven.net"
+FROM python:3-alpine
+MAINTAINER Yann Hamon "yann@mandragor.org"
 
 COPY . /src
 RUN cd src && pip install -e .
