@@ -1,8 +1,7 @@
 FROM python:3-alpine
-MAINTAINER Yann Hamon "yann@mandragor.org"
 
 COPY . /src
-RUN cd src && pip install -e .
+RUN pip --no-cache-dir install /src && rm -rf /src
 
 WORKDIR /out
 
