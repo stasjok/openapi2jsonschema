@@ -1,4 +1,0 @@
-click==7.1.2
-jsonref==0.2
-pkg-resources==0.0.0
-PyYAML==5.4.1
