@@ -1,21 +1,16 @@
-#!/usr/bin/make -f
+.PHONY : test
+test :
+	pytest
 
-.PHONY: docker-image
-docker-image:
-	docker build -f Dockerfile -t yannh/openapi2jsonschema .
+.PHONY : lint
+lint :
+	mypy .
+	black --check .
 
-venv:
-	python3 -m venv venv/
-	source venv/bin/activate
+.PHONY : format
+format :
+	black .
 
-.PHONY: pip-install
-pip-install: venv
-	pip install -r requirements.txt .
-
-.PHONY: pip-freeze
-pip-freeze:
-	pip freeze > requirements.txt
-
-.PHONY: run
-run: pip-install
-	python openapi2jsonschema/command.py https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json
+.PHONY : deps
+deps :
+	pip install -r dev-dependencies.txt
