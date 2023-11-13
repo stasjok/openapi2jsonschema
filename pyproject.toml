@@ -1,3 +1,11 @@
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+addopts = "--black --mypy --verbose --ignore setup.py --cov=openapi2jsonschema --cov-report term-missing"
+
+[tool.mypy]
+exclude = [
+    '^setup\.py$',
+]

@@ -10,8 +10,8 @@ FIXTURE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../fixt
 @pytest.mark.datafiles(os.path.join(FIXTURE_DIR, "petstore.yaml"))
 def test_command(datafiles):
     runner = CliRunner()
-    for spec in datafiles.listdir():
-        result = runner.invoke(default, ["file://%s" % spec])
+    for spec in os.listdir(datafiles):
+        result = runner.invoke(default, ["file://%s" % os.path.join(datafiles, spec)])
         assert result.exit_code == 0
 
 
