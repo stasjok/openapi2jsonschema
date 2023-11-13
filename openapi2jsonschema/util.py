@@ -79,7 +79,7 @@ def change_dict_values(d, prefix, version):
     try:
         is_nullable = False
         for k, v in iteritems(d):
-            if k == 'nullable':
+            if k == "nullable":
                 is_nullable = True
             new_v = v
             if isinstance(v, dict):
@@ -97,10 +97,10 @@ def change_dict_values(d, prefix, version):
             else:
                 new_v = v
             new[k] = new_v
-        if is_nullable and 'type' in new:
-            if not isinstance(new['type'], list):
-                new['type'] = [new['type']]
-            new['type'].append('null')
+        if is_nullable and "type" in new:
+            if not isinstance(new["type"], list):
+                new["type"] = [new["type"]]
+            new["type"].append("null")
         return new
     except AttributeError:
         return d

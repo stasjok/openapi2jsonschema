@@ -72,7 +72,9 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
     elif "openapi" in data:
         version = data["openapi"]
     else:
-        raise ValueError("cannot convert data to JSON because we could not find 'openapi' or 'swagger' keys")
+        raise ValueError(
+            "cannot convert data to JSON because we could not find 'openapi' or 'swagger' keys"
+        )
 
     if not os.path.exists(output):
         os.makedirs(output)
@@ -104,8 +106,7 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
                         for kube_ext in type_def["x-kubernetes-group-version-kind"]:
                             if expanded and "apiVersion" in type_def["properties"]:
                                 api_version = (
-                                    kube_ext["group"] + "/" +
-                                    kube_ext["version"]
+                                    kube_ext["group"] + "/" + kube_ext["version"]
                                     if kube_ext["group"]
                                     else kube_ext["version"]
                                 )
@@ -121,8 +122,7 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
                                 )
             if strict:
                 definitions = additional_properties(definitions)
-            definitions_file.write(json.dumps(
-                {"definitions": definitions}, indent=2))
+            definitions_file.write(json.dumps({"definitions": definitions}, indent=2))
 
     types = []
 
@@ -139,7 +139,7 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
                 group = title.split(".")[-3].lower()
                 api_version = title.split(".")[-2].lower()
             except IndexError:
-                error(f'unable to determine group and apiversion from {title}')
+                error(f"unable to determine group and apiversion from {title}")
                 continue
         specification = components[title]
         specification["$schema"] = "http://json-schema.org/schema#"
@@ -194,8 +194,7 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
 
             if stand_alone:
                 base = "file://%s/%s/" % (os.getcwd(), output)
-                specification = JsonRef.replace_refs(
-                    specification, base_uri=base)
+                specification = JsonRef.replace_refs(specification, base_uri=base)
 
             if "additionalProperties" in specification:
                 if specification["additionalProperties"]:
