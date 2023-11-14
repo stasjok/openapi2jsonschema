@@ -12,7 +12,7 @@
 
       openapi2jsonschema = pkgs.${system}.python3.pkgs.buildPythonApplication {
         pname = "openapi2jsonschema";
-        version = "0.9.1";
+        version = self.dirtyShortRev or self.shortRev or "dirty";
         pyproject = true;
 
         src = ./.;
