@@ -174,7 +174,7 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
             if (
                 kubernetes
                 and stand_alone
-                and kind
+                and kind.lower()
                 in [
                     "jsonschemaprops",
                     "jsonschemapropsorarray",
