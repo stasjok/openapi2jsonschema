@@ -193,7 +193,7 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
             specification = updated
 
             if stand_alone:
-                base = "file://%s/%s/" % (os.getcwd(), output)
+                base = f"file://{os.path.realpath(output)}/"
                 specification = JsonRef.replace_refs(specification, base_uri=base)
 
             if "additionalProperties" in specification:
