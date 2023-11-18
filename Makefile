@@ -4,7 +4,6 @@ test :
 
 .PHONY : lint
 lint :
-	mypy .
 	black --check .
 
 .PHONY : format

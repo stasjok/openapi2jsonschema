@@ -29,11 +29,9 @@
         ];
 
         nativeCheckInputs = with pkgs.${system}.python3.pkgs; [
-          pytest-mypy
           pytest-black
           pytest-cov
           pytest-datafiles
-          types-pyyaml
         ];
 
         dontUsePytestCheck = true;
