@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 import json
-import os
+from pathlib import Path
+from urllib.parse import urlparse
 import urllib.request
 
 import click
-from jsonref import JsonRef  # type: ignore
+from jsonref import JsonRef
 import yaml
 
 from openapi2jsonschema.errors import UnsupportedError
@@ -23,6 +24,7 @@ from openapi2jsonschema.util import (
 @click.option(
     "-o",
     "--output",
+    type=click.Path(file_okay=False, writable=True, resolve_path=True, path_type=Path),
     default="schemas",
     metavar="PATH",
     help="Directory to store schema files",
@@ -48,13 +50,13 @@ from openapi2jsonschema.util import (
     help="Prohibits properties not in the schema (additionalProperties: false)",
 )
 @click.argument("schema", metavar="SCHEMA_URL")
-def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
+def default(output: Path, schema, prefix, stand_alone, expanded, kubernetes, strict):
     """
     Converts a valid OpenAPI specification into a set of JSON Schema files
     """
     info("Downloading schema")
-    if os.path.isfile(schema):
-        schema = "file://" + os.path.realpath(schema)
+    if not urlparse(schema).scheme or Path(schema).is_file():
+        schema = Path(schema).resolve().as_uri()
     req = urllib.request.Request(schema)
     response = urllib.request.urlopen(req)
 
@@ -72,11 +74,10 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
             "cannot convert data to JSON because we could not find 'openapi' or 'swagger' keys"
         )
 
-    if not os.path.exists(output):
-        os.makedirs(output)
+    output.mkdir(parents=True, exist_ok=True)
 
     if version < "3":
-        with open("%s/_definitions.json" % output, "w") as definitions_file:
+        with output.joinpath("_definitions.json").open("w") as definitions_file:
             info("Generating shared definitions")
             definitions = data["definitions"]
             if kubernetes:
@@ -189,7 +190,7 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
             specification = updated
 
             if stand_alone:
-                base = f"file://{os.path.realpath(output)}/"
+                base = f"{output.as_uri()}/"
                 specification = JsonRef.replace_refs(specification, base_uri=base)
 
             if "additionalProperties" in specification:
@@ -208,13 +209,13 @@ def default(output, schema, prefix, stand_alone, expanded, kubernetes, strict):
                 updated = allow_null_optional_fields(updated)
                 specification["properties"] = updated
 
-            with open("%s/%s.json" % (output, full_name), "w") as schema_file:
+            with output.joinpath(f"{full_name}.json").open("w") as schema_file:
                 debug("Generating %s.json" % full_name)
                 schema_file.write(json.dumps(specification, indent=2))
         except Exception as e:
             error("An error occured processing %s: %s" % (kind, e))
 
-    with open("%s/all.json" % output, "w") as all_file:
+    with output.joinpath("all.json").open("w") as all_file:
         info("Generating schema for all types")
         contents = {"oneOf": []}
         for title in types:
