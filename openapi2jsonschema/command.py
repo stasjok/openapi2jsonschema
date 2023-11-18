@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 
 import json
-import yaml
-import urllib.request
 import os
+import urllib.request
 
-from jsonref import JsonRef  # type: ignore
 import click
+from jsonref import JsonRef  # type: ignore
+import yaml
 
-from openapi2jsonschema.log import info, debug, error
+from openapi2jsonschema.errors import UnsupportedError
+from openapi2jsonschema.log import debug, error, info
 from openapi2jsonschema.util import (
     additional_properties,
-    replace_int_or_string,
     allow_null_optional_fields,
-    change_dict_values,
     append_no_duplicates,
+    change_dict_values,
+    replace_int_or_string,
 )
-from openapi2jsonschema.errors import UnsupportedError
 
 
 @click.command()
