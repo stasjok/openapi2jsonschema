@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-
 def iteritems(d):
     if hasattr(dict, "iteritems"):
         return d.iteritems()
