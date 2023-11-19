@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="openapi2jsonschema",
-    version="0.9.2",
+    version="0.10.0",
     description="OpenAPI to JSON schemas converter",
     long_description="Converts OpenAPI definitions into JSON schemas for all types in the API",
     author="Gareth Rushgrove",
