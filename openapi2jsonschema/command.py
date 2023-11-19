@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 import json
+import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
-import urllib.request
 
 import click
-from jsonref import JsonRef
 import yaml
+from jsonref import JsonRef
 
 from openapi2jsonschema.errors import UnsupportedError
 from openapi2jsonschema.log import debug, error, info

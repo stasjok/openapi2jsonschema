@@ -30,6 +30,7 @@
 
         nativeCheckInputs = with pkgs.${system}.python3.pkgs; [
           pytest-black
+          pytest-isort
           pytest-cov
           pytest-datafiles
         ];

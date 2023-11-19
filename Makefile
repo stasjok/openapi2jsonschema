@@ -4,11 +4,13 @@ test :
 
 .PHONY : lint
 lint :
-	black --check .
+	black --diff .
+	isort --diff .
 
 .PHONY : format
 format :
 	black .
+	isort .
 
 .PHONY : deps
 deps :
