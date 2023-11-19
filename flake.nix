@@ -21,6 +21,7 @@
           pyyaml
           jsonref
           click
+          kubernetes
         ];
 
         nativeBuildInputs = with pkgs.${system}.python3.pkgs; [

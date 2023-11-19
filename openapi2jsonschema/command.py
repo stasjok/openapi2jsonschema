@@ -3,9 +3,11 @@
 import json
 import urllib.request
 from pathlib import Path
+from typing import Optional
 from urllib.parse import urlparse
 
 import click
+import kubernetes
 import yaml
 from jsonref import JsonRef
 
@@ -20,51 +22,18 @@ from openapi2jsonschema.util import (
 )
 
 
-@click.command()
-@click.option(
-    "-o",
-    "--output",
-    type=click.Path(file_okay=False, writable=True, resolve_path=True, path_type=Path),
-    default="schemas",
-    metavar="PATH",
-    help="Directory to store schema files",
-)
-@click.option(
-    "-p",
-    "--prefix",
-    default="_definitions.json",
-    help="Prefix for JSON references (only for OpenAPI versions before 3.0)",
-)
-@click.option(
-    "--stand-alone", is_flag=True, help="Whether or not to de-reference JSON schemas"
-)
-@click.option(
-    "--expanded", is_flag=True, help="Expand Kubernetes schemas by API version"
-)
-@click.option(
-    "--kubernetes", is_flag=True, help="Enable Kubernetes specific processors"
-)
-@click.option(
-    "--strict",
-    is_flag=True,
-    help="Prohibits properties not in the schema (additionalProperties: false)",
-)
-@click.argument("schema", metavar="SCHEMA_URL")
-def default(output: Path, schema, prefix, stand_alone, expanded, kubernetes, strict):
+def process(
+    data,
+    output: Path,
+    prefix: str,
+    stand_alone: bool,
+    expanded: bool,
+    kubernetes: bool,
+    strict: bool,
+):
     """
     Converts a valid OpenAPI specification into a set of JSON Schema files
     """
-    info("Downloading schema")
-    if not urlparse(schema).scheme or Path(schema).is_file():
-        schema = Path(schema).resolve().as_uri()
-    req = urllib.request.Request(schema)
-    response = urllib.request.urlopen(req)
-
-    info("Parsing schema")
-    # Note that JSON is valid YAML, so we can use the YAML parser whether
-    # the schema is stored in JSON or YAML
-    data = yaml.load(response.read(), Loader=yaml.SafeLoader)
-
     if "swagger" in data:
         version = data["swagger"]
     elif "openapi" in data:
@@ -226,6 +195,128 @@ def default(output: Path, schema, prefix, stand_alone, expanded, kubernetes, str
             )
     with output.joinpath("all.json").open("w") as all_file:
         json.dump(contents, all_file, indent=2)
+
+
+@click.command()
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(file_okay=False, writable=True, resolve_path=True, path_type=Path),
+    default="schemas",
+    metavar="PATH",
+    help="Directory to store schema files",
+)
+@click.option(
+    "-p",
+    "--prefix",
+    default="_definitions.json",
+    help="Prefix for JSON references (only for OpenAPI versions before 3.0)",
+)
+@click.option(
+    "--stand-alone", is_flag=True, help="Whether or not to de-reference JSON schemas"
+)
+@click.option(
+    "--expanded", is_flag=True, help="Expand Kubernetes schemas by API version"
+)
+@click.option(
+    "--kubernetes", is_flag=True, help="Enable Kubernetes specific processors"
+)
+@click.option(
+    "--strict",
+    is_flag=True,
+    help="Prohibits properties not in the schema (additionalProperties: false)",
+)
+@click.argument("schema", metavar="SCHEMA_URL")
+def default(
+    output: Path,
+    prefix: str,
+    stand_alone: bool,
+    expanded: bool,
+    kubernetes: bool,
+    strict: bool,
+    schema: str,
+):
+    """
+    Converts a valid OpenAPI specification into a set of JSON Schema files
+    """
+    info("Downloading schema")
+    if not urlparse(schema).scheme or Path(schema).is_file():
+        schema = Path(schema).resolve().as_uri()
+    req = urllib.request.Request(schema)
+    response = urllib.request.urlopen(req)
+
+    info("Parsing schema")
+    # Note that JSON is valid YAML, so we can use the YAML parser whether
+    # the schema is stored in JSON or YAML
+    data = yaml.load(response.read(), Loader=yaml.SafeLoader)
+
+    process(data, output, prefix, stand_alone, expanded, kubernetes, strict)
+
+
+@click.command()
+@click.option("--kubeconfig", help="Path to the kubeconfig file")
+@click.option("--context", help="The name of the kubeconfig context to use")
+@click.option(
+    "--insecure-skip-tls-verify",
+    "insecure",
+    is_flag=True,
+    help="If set, the server's certificate will not be checked for validity."
+    " This will make your HTTPS connections insecure",
+)
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(file_okay=False, writable=True, resolve_path=True, path_type=Path),
+    default="schemas",
+    metavar="PATH",
+    help="Directory to store schema files",
+)
+@click.option(
+    "-p",
+    "--prefix",
+    default="_definitions.json",
+    help="Prefix for JSON references",
+)
+@click.option(
+    "--stand-alone", is_flag=True, help="Whether or not to de-reference JSON schemas"
+)
+@click.option("--expanded", is_flag=True, help="Expand schemas by API version")
+@click.option(
+    "--strict",
+    is_flag=True,
+    help="Prohibits properties not in the schema (additionalProperties: false)",
+)
+def kube(
+    kubeconfig: Optional[str],
+    context: Optional[str],
+    insecure: bool,
+    output: Path,
+    prefix: str,
+    stand_alone: bool,
+    expanded: bool,
+    strict: bool,
+):
+    """
+    Loads an OpenAPI specification from Kubernetes and converts it into a set of JSON Schema files
+    """
+    info("Reading kubeconfig")
+    configuration = kubernetes.client.Configuration()
+    kubernetes.config.load_kube_config(
+        config_file=kubeconfig, context=context, client_configuration=configuration
+    )
+    if insecure:
+        configuration.verify_ssl = False
+
+    with kubernetes.client.ApiClient(configuration=configuration) as api_client:
+        info("Getting schema")
+        data = api_client.call_api(
+            "/openapi/v2",
+            "GET",
+            _return_http_data_only=True,
+            auth_settings=["BearerToken"],
+            response_type=object,
+        )
+    process(data, output, prefix, stand_alone, expanded, True, strict)
 
 
 if __name__ == "__main__":

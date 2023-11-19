@@ -4,7 +4,8 @@ FROM python:3-alpine
 RUN pip --no-cache-dir install \
         "click>=7.0" \
         "PyYAML>=5.1" \
-        "jsonref>=0.2.0"
+        "jsonref>=0.2.0" \
+        "kubernetes>=20.0"
 
 # Application
 COPY . /src

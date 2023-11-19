@@ -16,11 +16,13 @@ setup(
         "click >= 7.0",
         "PyYAML >= 5.1",
         "jsonref >= 0.2.0",
+        "kubernetes >= 20.0",
     ],
     python_requires=">=3.6",
     entry_points={
         "console_scripts": [
             "openapi2jsonschema = openapi2jsonschema.command:default",
+            "kube2jsonschema = openapi2jsonschema.command:kube",
         ]
     },
 )
