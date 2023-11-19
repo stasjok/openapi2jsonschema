@@ -47,6 +47,20 @@
       };
     });
 
+    apps = forAllSystems (system: {
+      default = self.apps.${system}.openapi2jsonschema;
+
+      openapi2jsonschema = {
+        type = "app";
+        program = "${self.packages.${system}.openapi2jsonschema}/bin/openapi2jsonschema";
+      };
+
+      kube2jsonschema = {
+        type = "app";
+        program = "${self.packages.${system}.openapi2jsonschema}/bin/kube2jsonschema";
+      };
+    });
+
     devShells = forAllSystems (system: {
       default = pkgs.${system}.mkShellNoCC {
         name = "openapi2jsonschema";
