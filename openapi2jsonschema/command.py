@@ -77,49 +77,49 @@ def default(output: Path, schema, prefix, stand_alone, expanded, kubernetes, str
     output.mkdir(parents=True, exist_ok=True)
 
     if version < "3":
+        info("Generating shared definitions")
+        definitions = data["definitions"]
+        if kubernetes:
+            definitions["io.k8s.apimachinery.pkg.util.intstr.IntOrString"] = {
+                "oneOf": [{"type": "string"}, {"type": "integer"}]
+            }
+            # Although the kubernetes api does not allow `number`  as valid
+            # Quantity type - almost all kubenetes tooling
+            # recognizes it is valid. For this reason, we extend the API definition to
+            # allow `number` values.
+            definitions["io.k8s.apimachinery.pkg.api.resource.Quantity"] = {
+                "oneOf": [{"type": "string"}, {"type": "number"}]
+            }
+
+            # For Kubernetes, populate `apiVersion` and `kind` properties from `x-kubernetes-group-version-kind`
+            for type_name in definitions:
+                type_def = definitions[type_name]
+                if "properties" not in type_def:
+                    error(f"{type_name} has no properties")
+                    continue
+
+                if "x-kubernetes-group-version-kind" in type_def:
+                    for kube_ext in type_def["x-kubernetes-group-version-kind"]:
+                        if "apiVersion" in type_def["properties"]:
+                            api_version = (
+                                kube_ext["group"] + "/" + kube_ext["version"]
+                                if kube_ext["group"]
+                                else kube_ext["version"]
+                            )
+                            append_no_duplicates(
+                                type_def["properties"]["apiVersion"],
+                                "enum",
+                                api_version,
+                            )
+                        if "kind" in type_def["properties"]:
+                            kind = kube_ext["kind"]
+                            append_no_duplicates(
+                                type_def["properties"]["kind"], "enum", kind
+                            )
+        if strict:
+            definitions = additional_properties(definitions)
         with output.joinpath("_definitions.json").open("w") as definitions_file:
-            info("Generating shared definitions")
-            definitions = data["definitions"]
-            if kubernetes:
-                definitions["io.k8s.apimachinery.pkg.util.intstr.IntOrString"] = {
-                    "oneOf": [{"type": "string"}, {"type": "integer"}]
-                }
-                # Although the kubernetes api does not allow `number`  as valid
-                # Quantity type - almost all kubenetes tooling
-                # recognizes it is valid. For this reason, we extend the API definition to
-                # allow `number` values.
-                definitions["io.k8s.apimachinery.pkg.api.resource.Quantity"] = {
-                    "oneOf": [{"type": "string"}, {"type": "number"}]
-                }
-
-                # For Kubernetes, populate `apiVersion` and `kind` properties from `x-kubernetes-group-version-kind`
-                for type_name in definitions:
-                    type_def = definitions[type_name]
-                    if "properties" not in type_def:
-                        error(f"{type_name} has no properties")
-                        continue
-
-                    if "x-kubernetes-group-version-kind" in type_def:
-                        for kube_ext in type_def["x-kubernetes-group-version-kind"]:
-                            if "apiVersion" in type_def["properties"]:
-                                api_version = (
-                                    kube_ext["group"] + "/" + kube_ext["version"]
-                                    if kube_ext["group"]
-                                    else kube_ext["version"]
-                                )
-                                append_no_duplicates(
-                                    type_def["properties"]["apiVersion"],
-                                    "enum",
-                                    api_version,
-                                )
-                            if "kind" in type_def["properties"]:
-                                kind = kube_ext["kind"]
-                                append_no_duplicates(
-                                    type_def["properties"]["kind"], "enum", kind
-                                )
-            if strict:
-                definitions = additional_properties(definitions)
-            definitions_file.write(json.dumps({"definitions": definitions}, indent=2))
+            json.dump({"definitions": definitions}, definitions_file, indent=2)
 
     types = []
 
@@ -209,25 +209,23 @@ def default(output: Path, schema, prefix, stand_alone, expanded, kubernetes, str
                 updated = allow_null_optional_fields(updated)
                 specification["properties"] = updated
 
+            debug("Generating %s.json" % full_name)
             with output.joinpath(f"{full_name}.json").open("w") as schema_file:
-                debug("Generating %s.json" % full_name)
-                schema_file.write(json.dumps(specification, indent=2))
+                json.dump(specification, schema_file, indent=2)
         except Exception as e:
             error("An error occured processing %s: %s" % (kind, e))
 
+    info("Generating schema for all types")
+    contents = {"oneOf": []}
+    for title in types:
+        if version < "3":
+            contents["oneOf"].append({"$ref": "%s#/definitions/%s" % (prefix, title)})
+        else:
+            contents["oneOf"].append(
+                {"$ref": (title.replace("#/components/schemas/", "") + ".json")}
+            )
     with output.joinpath("all.json").open("w") as all_file:
-        info("Generating schema for all types")
-        contents = {"oneOf": []}
-        for title in types:
-            if version < "3":
-                contents["oneOf"].append(
-                    {"$ref": "%s#/definitions/%s" % (prefix, title)}
-                )
-            else:
-                contents["oneOf"].append(
-                    {"$ref": (title.replace("#/components/schemas/", "") + ".json")}
-                )
-        all_file.write(json.dumps(contents, indent=2))
+        json.dump(contents, all_file, indent=2)
 
 
 if __name__ == "__main__":
