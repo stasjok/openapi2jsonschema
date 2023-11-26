@@ -59,23 +59,25 @@ def process(
 
             # For Kubernetes, populate `apiVersion` and `kind` properties from `x-kubernetes-group-version-kind`
             for type_name, type_def in definitions.items():
-                if "properties" not in type_def:
+                try:
+                    type_properties = type_def["properties"]
+                except KeyError:
                     error(f"{type_name} has no properties")
                     continue
 
                 for kube_ext in type_def.get("x-kubernetes-group-version-kind", []):
-                    if "apiVersion" in type_def["properties"]:
+                    if "apiVersion" in type_properties:
                         api_version = "/".join(
                             filter(None, [kube_ext["group"], kube_ext["version"]])
                         )
                         append_no_duplicates(
-                            type_def["properties"]["apiVersion"],
+                            type_properties["apiVersion"],
                             "enum",
                             api_version,
                         )
-                    if "kind" in type_def["properties"]:
+                    if "kind" in type_properties:
                         append_no_duplicates(
-                            type_def["properties"]["kind"], "enum", kube_ext["kind"]
+                            type_properties["kind"], "enum", kube_ext["kind"]
                         )
         if strict:
             definitions = additional_properties(definitions)
