@@ -6,8 +6,7 @@ def additional_properties(data):
             new_v = v
             if isinstance(v, dict):
                 if "properties" in v:
-                    if "additionalProperties" not in v:
-                        v["additionalProperties"] = False
+                    v.setdefault("additionalProperties", False)
                 new_v = additional_properties(v)
             else:
                 new_v = v
@@ -23,7 +22,7 @@ def replace_int_or_string(data):
         for k, v in data.items():
             new_v = v
             if isinstance(v, dict):
-                if "format" in v and v["format"] == "int-or-string":
+                if v.get("format") == "int-or-string":
                     new_v = {"oneOf": [{"type": "string"}, {"type": "integer"}]}
                 else:
                     new_v = replace_int_or_string(v)
