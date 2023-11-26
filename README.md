@@ -76,8 +76,8 @@ It has the same flags, except `--kubernetes` is implied.
 My specific usecase is to use Kubernetes json-schema in `yaml-language-server`.
 Note that yaml-language-server need a special handling for Kubernetes.
 By default, it works correctly only with a hard-coded json-schema.
-You can try my patch here: <https://github.com/stasjok/yaml-language-server/tree/custom-kube-schema-url>
-You can set in settings with it:
+You can try my patch here: <https://github.com/stasjok/yaml-language-server/tree/custom-kube-schema-url>.
+With this patch you can set in settings:
 
 ```json
 {
