@@ -65,10 +65,8 @@ def process(
 
                 for kube_ext in type_def.get("x-kubernetes-group-version-kind", []):
                     if "apiVersion" in type_def["properties"]:
-                        api_version = (
-                            kube_ext["group"] + "/" + kube_ext["version"]
-                            if kube_ext["group"]
-                            else kube_ext["version"]
+                        api_version = "/".join(
+                            filter(None, [kube_ext["group"], kube_ext["version"]])
                         )
                         append_no_duplicates(
                             type_def["properties"]["apiVersion"],
@@ -76,9 +74,8 @@ def process(
                             api_version,
                         )
                     if "kind" in type_def["properties"]:
-                        kind = kube_ext["kind"]
                         append_no_duplicates(
-                            type_def["properties"]["kind"], "enum", kind
+                            type_def["properties"]["kind"], "enum", kube_ext["kind"]
                         )
         if strict:
             definitions = additional_properties(definitions)
