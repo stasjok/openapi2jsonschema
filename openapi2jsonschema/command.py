@@ -52,14 +52,26 @@ def process(
         info("Generating shared definitions")
         if kubernetes:
             components["io.k8s.apimachinery.pkg.util.intstr.IntOrString"] = {
-                "oneOf": [{"type": "string"}, {"type": "integer"}]
+                "description": components[
+                    "io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+                ]["description"],
+                "oneOf": [{"type": "string"}, {"type": "integer"}],
             }
             # Although the kubernetes api does not allow `number`  as valid
             # Quantity type - almost all kubenetes tooling
             # recognizes it is valid. For this reason, we extend the API definition to
             # allow `number` values.
             components["io.k8s.apimachinery.pkg.api.resource.Quantity"] = {
-                "oneOf": [{"type": "string"}, {"type": "number"}]
+                "description": components[
+                    "io.k8s.apimachinery.pkg.api.resource.Quantity"
+                ]["description"],
+                "oneOf": [{"type": "string"}, {"type": "number"}],
+            }
+            components["io.k8s.apimachinery.pkg.api.resource.Quantity_v2"] = {
+                "description": components[
+                    "io.k8s.apimachinery.pkg.api.resource.Quantity_v2"
+                ]["description"],
+                "oneOf": [{"type": "string"}, {"type": "number"}],
             }
 
             # For Kubernetes, populate `apiVersion` and `kind` properties from `x-kubernetes-group-version-kind`
