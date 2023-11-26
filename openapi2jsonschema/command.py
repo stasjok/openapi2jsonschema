@@ -3,7 +3,7 @@
 import json
 import urllib.request
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional, cast
 from urllib.parse import urlparse
 
 import click
@@ -154,6 +154,8 @@ def process(
             if stand_alone:
                 base = f"{output.as_uri()}/"
                 specification = JsonRef.replace_refs(specification, base_uri=base)
+                # Make type checker happy, cast to unknown dict
+                specification = cast(Dict, specification)
 
             if "additionalProperties" in specification:
                 if specification["additionalProperties"]:
