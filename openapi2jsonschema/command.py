@@ -94,28 +94,27 @@ def process(
         components = data["components"]["schemas"]
 
     for title, specification in components.items():
-        kind = title.split(".")[-1]
-        if kubernetes:
+        title_splitted = title.split(".")
+        kind = title_splitted[-1]
+        full_name = kind
+        if kubernetes and expanded:
             try:
-                group = title.split(".")[-3].lower()
-                api_version = title.split(".")[-2].lower()
+                group = title_splitted[-3].lower()
+                api_version = title_splitted[-2].lower()
             except IndexError:
                 error(f"unable to determine group and apiversion from {title}")
                 continue
+            full_name = (
+                f"{kind}-{api_version}"
+                if group in ["core", "api"]
+                else f"{kind}-{group}-{api_version}"
+            )
 
         specification["$schema"] = "http://json-schema.org/schema#"
         specification.setdefault("type", "object")
 
         if strict:
             specification["additionalProperties"] = False
-
-        if kubernetes and expanded:
-            if group in ["core", "api"]:
-                full_name = f"{kind}-{api_version}"
-            else:
-                full_name = f"{kind}-{group}-{api_version}"
-        else:
-            full_name = kind
 
         types.append(title)
 
@@ -124,7 +123,7 @@ def process(
 
             # These APIs are all deprecated
             if kubernetes:
-                if title.split(".")[3] == "pkg" and title.split(".")[2] == "kubernetes":
+                if title_splitted[3] == "pkg" and title_splitted[2] == "kubernetes":
                     raise UnsupportedError(
                         f"{title} not currently supported, due to use of pkg namespace"
                     )
