@@ -43,22 +43,26 @@ def process(
     output.mkdir(parents=True, exist_ok=True)
 
     if version < "3":
+        components = data["definitions"]
+    else:
+        components = data["components"]["schemas"]
+
+    if version < "3":
         info("Generating shared definitions")
-        definitions = data["definitions"]
         if kubernetes:
-            definitions["io.k8s.apimachinery.pkg.util.intstr.IntOrString"] = {
+            components["io.k8s.apimachinery.pkg.util.intstr.IntOrString"] = {
                 "oneOf": [{"type": "string"}, {"type": "integer"}]
             }
             # Although the kubernetes api does not allow `number`  as valid
             # Quantity type - almost all kubenetes tooling
             # recognizes it is valid. For this reason, we extend the API definition to
             # allow `number` values.
-            definitions["io.k8s.apimachinery.pkg.api.resource.Quantity"] = {
+            components["io.k8s.apimachinery.pkg.api.resource.Quantity"] = {
                 "oneOf": [{"type": "string"}, {"type": "number"}]
             }
 
             # For Kubernetes, populate `apiVersion` and `kind` properties from `x-kubernetes-group-version-kind`
-            for type_name, type_def in definitions.items():
+            for type_name, type_def in components.items():
                 try:
                     type_properties = type_def["properties"]
                 except KeyError:
@@ -80,18 +84,13 @@ def process(
                             type_properties["kind"], "enum", kube_ext["kind"]
                         )
         if strict:
-            definitions = additional_properties(definitions)
+            components = additional_properties(components)
         with output.joinpath("_definitions.json").open("w") as definitions_file:
-            json.dump({"definitions": definitions}, definitions_file, indent=2)
+            json.dump({"definitions": components}, definitions_file, indent=2)
 
     types = []
 
     info("Generating individual schemas")
-    if version < "3":
-        components = data["definitions"]
-    else:
-        components = data["components"]["schemas"]
-
     for title, specification in components.items():
         title_splitted = title.split(".")
         kind = title_splitted[-1]
