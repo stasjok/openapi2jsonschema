@@ -120,11 +120,14 @@ def process(
             debug(f"Processing {full_name}")
 
             # These APIs are all deprecated
-            if kubernetes:
-                if title_splitted[3] == "pkg" and title_splitted[2] == "kubernetes":
-                    raise UnsupportedError(
-                        f"{title} not currently supported, due to use of pkg namespace"
-                    )
+            if (
+                kubernetes
+                and title_splitted[3] == "pkg"
+                and title_splitted[2] == "kubernetes"
+            ):
+                raise UnsupportedError(
+                    f"{title} not currently supported, due to use of pkg namespace"
+                )
 
             # This list of Kubernetes types carry around jsonschema for Kubernetes and don't
             # currently work with openapi2jsonschema
