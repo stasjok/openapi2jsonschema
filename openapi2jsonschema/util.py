@@ -1,15 +1,8 @@
-def iteritems(d):
-    if hasattr(dict, "iteritems"):
-        return d.iteritems()
-    else:
-        return iter(d.items())
-
-
 def additional_properties(data):
     "This recreates the behaviour of kubectl at https://github.com/kubernetes/kubernetes/blob/225b9119d6a8f03fcbe3cc3d590c261965d928d0/pkg/kubectl/validation/schema.go#L312"
     new = {}
     try:
-        for k, v in iteritems(data):
+        for k, v in data.items():
             new_v = v
             if isinstance(v, dict):
                 if "properties" in v:
@@ -27,7 +20,7 @@ def additional_properties(data):
 def replace_int_or_string(data):
     new = {}
     try:
-        for k, v in iteritems(data):
+        for k, v in data.items():
             new_v = v
             if isinstance(v, dict):
                 if "format" in v and v["format"] == "int-or-string":
@@ -49,7 +42,7 @@ def replace_int_or_string(data):
 def allow_null_optional_fields(data, parent=None, grand_parent=None, key=None):
     new = {}
     try:
-        for k, v in iteritems(data):
+        for k, v in data.items():
             new_v = v
             if isinstance(v, dict):
                 new_v = allow_null_optional_fields(v, data, parent, k)
@@ -75,7 +68,7 @@ def change_dict_values(d, prefix, version):
     new = {}
     try:
         is_nullable = False
-        for k, v in iteritems(d):
+        for k, v in d.items():
             if k == "nullable":
                 is_nullable = True
             new_v = v
