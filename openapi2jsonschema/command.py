@@ -58,30 +58,28 @@ def process(
             }
 
             # For Kubernetes, populate `apiVersion` and `kind` properties from `x-kubernetes-group-version-kind`
-            for type_name in definitions:
-                type_def = definitions[type_name]
+            for type_name, type_def in definitions.items():
                 if "properties" not in type_def:
                     error(f"{type_name} has no properties")
                     continue
 
-                if "x-kubernetes-group-version-kind" in type_def:
-                    for kube_ext in type_def["x-kubernetes-group-version-kind"]:
-                        if "apiVersion" in type_def["properties"]:
-                            api_version = (
-                                kube_ext["group"] + "/" + kube_ext["version"]
-                                if kube_ext["group"]
-                                else kube_ext["version"]
-                            )
-                            append_no_duplicates(
-                                type_def["properties"]["apiVersion"],
-                                "enum",
-                                api_version,
-                            )
-                        if "kind" in type_def["properties"]:
-                            kind = kube_ext["kind"]
-                            append_no_duplicates(
-                                type_def["properties"]["kind"], "enum", kind
-                            )
+                for kube_ext in type_def.get("x-kubernetes-group-version-kind", []):
+                    if "apiVersion" in type_def["properties"]:
+                        api_version = (
+                            kube_ext["group"] + "/" + kube_ext["version"]
+                            if kube_ext["group"]
+                            else kube_ext["version"]
+                        )
+                        append_no_duplicates(
+                            type_def["properties"]["apiVersion"],
+                            "enum",
+                            api_version,
+                        )
+                    if "kind" in type_def["properties"]:
+                        kind = kube_ext["kind"]
+                        append_no_duplicates(
+                            type_def["properties"]["kind"], "enum", kind
+                        )
         if strict:
             definitions = additional_properties(definitions)
         with output.joinpath("_definitions.json").open("w") as definitions_file:
@@ -95,7 +93,7 @@ def process(
     else:
         components = data["components"]["schemas"]
 
-    for title in components:
+    for title, specification in components.items():
         kind = title.split(".")[-1]
         if kubernetes:
             try:
@@ -104,7 +102,7 @@ def process(
             except IndexError:
                 error(f"unable to determine group and apiversion from {title}")
                 continue
-        specification = components[title]
+
         specification["$schema"] = "http://json-schema.org/schema#"
         specification.setdefault("type", "object")
 
