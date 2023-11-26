@@ -111,23 +111,22 @@ def process(
 
         if kubernetes and expanded:
             if group in ["core", "api"]:
-                full_name = "%s-%s" % (kind, api_version)
+                full_name = f"{kind}-{api_version}"
             else:
-                full_name = "%s-%s-%s" % (kind, group, api_version)
+                full_name = f"{kind}-{group}-{api_version}"
         else:
             full_name = kind
 
         types.append(title)
 
         try:
-            debug("Processing %s" % full_name)
+            debug(f"Processing {full_name}")
 
             # These APIs are all deprecated
             if kubernetes:
                 if title.split(".")[3] == "pkg" and title.split(".")[2] == "kubernetes":
                     raise UnsupportedError(
-                        "%s not currently supported, due to use of pkg namespace"
-                        % title
+                        f"{title} not currently supported, due to use of pkg namespace"
                     )
 
             # This list of Kubernetes types carry around jsonschema for Kubernetes and don't
@@ -148,7 +147,7 @@ def process(
                     "jsonschemapropsorbool",
                 ]
             ):
-                raise UnsupportedError("%s not currently supported" % kind)
+                raise UnsupportedError(f"{kind} not currently supported")
 
             updated = change_dict_values(specification, prefix, version)
             specification = updated
@@ -173,20 +172,20 @@ def process(
                 updated = allow_null_optional_fields(updated)
                 specification["properties"] = updated
 
-            debug("Generating %s.json" % full_name)
+            debug(f"Generating {full_name}.json")
             with output.joinpath(f"{full_name}.json").open("w") as schema_file:
                 json.dump(specification, schema_file, indent=2)
         except Exception as e:
-            error("An error occured processing %s: %s" % (kind, e))
+            error(f"An error occured processing {kind}: {e}")
 
     info("Generating schema for all types")
     contents = {"oneOf": []}
     for title in types:
         if version < "3":
-            contents["oneOf"].append({"$ref": "%s#/definitions/%s" % (prefix, title)})
+            contents["oneOf"].append({"$ref": f"{prefix}#/definitions/{title}"})
         else:
             contents["oneOf"].append(
-                {"$ref": (title.replace("#/components/schemas/", "") + ".json")}
+                {"$ref": title.replace("#/components/schemas/", "") + ".json"}
             )
     with output.joinpath("all.json").open("w") as all_file:
         json.dump(contents, all_file, indent=2)

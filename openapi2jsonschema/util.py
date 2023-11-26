@@ -88,7 +88,7 @@ def change_dict_values(d, prefix, version):
             elif isinstance(v, str):
                 if k == "$ref":
                     if version < "3":
-                        new_v = "%s%s" % (prefix, v)
+                        new_v = f"{prefix}{v}"
                     else:
                         new_v = v.replace("#/components/schemas/", "") + ".json"
             else:
