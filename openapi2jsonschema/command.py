@@ -30,6 +30,7 @@ def process(
     expanded: bool,
     kubernetes: bool,
     strict: bool,
+    only_top_level: bool,
 ):
     """
     Converts a valid OpenAPI specification into a set of JSON Schema files
@@ -92,6 +93,14 @@ def process(
 
     info("Generating individual schemas")
     for title, specification in components.items():
+        properties = specification.get("properties")
+        if (
+            kubernetes
+            and only_top_level
+            and properties
+            and not ("kind" in properties and "apiVersion" in properties)
+        ):
+            continue
         title_splitted = title.split(".")
         kind = title_splitted[-1]
         full_name = kind
@@ -157,15 +166,15 @@ def process(
                 # Make type checker happy, cast to unknown dict
                 specification = cast(Dict, specification)
 
-            if "properties" in specification:
-                spec_props = specification["properties"]
+            if properties:
+                properties = specification["properties"]
                 if strict:
-                    spec_props = additional_properties(spec_props)
+                    properties = additional_properties(properties)
 
                 if kubernetes:
-                    spec_props = replace_int_or_string(spec_props)
-                    spec_props = allow_null_optional_fields(spec_props)
-                specification["properties"] = spec_props
+                    properties = replace_int_or_string(properties)
+                    properties = allow_null_optional_fields(properties)
+                specification["properties"] = properties
 
             debug(f"Generating {full_name}.json")
             with output.joinpath(f"{full_name}.json").open("w") as schema_file:
@@ -215,6 +224,11 @@ def process(
     is_flag=True,
     help="Prohibits properties not in the schema (additionalProperties: false)",
 )
+@click.option(
+    "--only-top-level",
+    is_flag=True,
+    help="Output schemas only with a 'kind' and 'apiVersion' properties (only for kubernetes)",
+)
 @click.argument("schema", metavar="SCHEMA_URL")
 def default(
     output: Path,
@@ -224,6 +238,7 @@ def default(
     kubernetes: bool,
     strict: bool,
     schema: str,
+    only_top_level: bool,
 ):
     """
     Converts a valid OpenAPI specification into a set of JSON Schema files
@@ -239,7 +254,9 @@ def default(
     # the schema is stored in JSON or YAML
     data = yaml.load(response.read(), Loader=yaml.SafeLoader)
 
-    process(data, output, prefix, stand_alone, expanded, kubernetes, strict)
+    process(
+        data, output, prefix, stand_alone, expanded, kubernetes, strict, only_top_level
+    )
 
 
 @click.command()
@@ -275,6 +292,11 @@ def default(
     is_flag=True,
     help="Prohibits properties not in the schema (additionalProperties: false)",
 )
+@click.option(
+    "--only-top-level",
+    is_flag=True,
+    help="Output schemas only with a 'kind' and 'apiVersion' properties (only for kubernetes)",
+)
 def kube(
     kubeconfig: Optional[str],
     context: Optional[str],
@@ -284,6 +306,7 @@ def kube(
     stand_alone: bool,
     expanded: bool,
     strict: bool,
+    only_top_level: bool,
 ):
     """
     Loads an OpenAPI specification from Kubernetes and converts it into a set of JSON Schema files
@@ -305,7 +328,7 @@ def kube(
             auth_settings=["BearerToken"],
             response_type=object,
         )
-    process(data, output, prefix, stand_alone, expanded, True, strict)
+    process(data, output, prefix, stand_alone, expanded, True, strict, only_top_level)
 
 
 if __name__ == "__main__":
