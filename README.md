@@ -3,7 +3,6 @@
 A utility to extract [JSON Schema](http://json-schema.org/) from a
 valid [OpenAPI](https://www.openapis.org/) specification.
 
-
 ## Why
 
 OpenAPI contains a list of type `definitions` using a superset of JSON
@@ -13,19 +12,29 @@ existing OpenAPI tooling. Generating separate schemas for types defined
 in OpenAPI allows for all sorts of indepent tooling to be build which
 can be easily maintained, because the canonical definition is shared.
 
-
 ## Installation
 
 `openapi2jsonschema` is implemented in Python. Assuming you have a
 Python intepreter and pip installed you should be able to install with:
 
 ```
-pip install openapi2jsonschema
+pip install git+https://github.com/stasjok/openapi2jsonschema.git
+```
+
+With podman/docker:
+
+```
+podman build -t openapi2jsonschema https://github.com/stasjok/openapi2jsonschema.git
+```
+
+With nix:
+
+```
+nix profile install github:stasjok/openapi2jsonschema#openapi2jsonschema
 ```
 
 This has not yet been widely tested and is currently in a _works on my
 machine_ state.
-
 
 ## Usage
 
@@ -41,7 +50,7 @@ provides a number of options to modify the output:
 
 ```
 $ openapi2jsonschema --help
-Usage: openapi2jsonschema [OPTIONS] SCHEMA
+Usage: openapi2jsonschema [OPTIONS] SCHEMA_URL
 
   Converts a valid OpenAPI specification into a set of JSON Schema files
 
@@ -50,20 +59,41 @@ Options:
   -p, --prefix TEXT  Prefix for JSON references (only for OpenAPI versions
                      before 3.0)
   --stand-alone      Whether or not to de-reference JSON schemas
+  --expanded         Expand Kubernetes schemas by API version
   --kubernetes       Enable Kubernetes specific processors
   --strict           Prohibits properties not in the schema
                      (additionalProperties: false)
+  --only-top-level   Output schemas only with a 'kind' and 'apiVersion'
+                     properties (only for kubernetes)
   --help             Show this message and exit.
 ```
 
+A second tool `kube2jsonschema` will download openapi schema directly from Kubernetes.
+It has the same flags, except `--kubernetes` is implied.
 
 ## Example
 
-My specific usecase was being able to validate a Kubernetes
-configuration file without a Kubernetes client like `kubectl` and
-without the server. For that I have a bash script,
-[available here](https://github.com/instrumenta/kubernetes-json-schema/blob/master/build.sh).
+My specific usecase is to use Kubernetes json-schema in `yaml-language-server`.
+Note that yaml-language-server need a special handling for Kubernetes.
+By default, it works correctly only with a hard-coded json-schema.
+You can try my patch here: <https://github.com/stasjok/yaml-language-server/tree/custom-kube-schema-url>
+You can set in settings with it:
 
-The output from running this script can be seen in the accompanying
-[instrumenta/kubernetes-json-schema](https://github.com/instrumenta/kubernetes-json-schema).
+```json
+{
+  "yaml": {
+    "kubernetesSchemaUrl": "/path/to/schemas/all.json",
+    "schemas": {
+      "kubernetes": [
+        "*.yml"
+      ]
+    }
+  }
+}
+```
 
+To generate json-schemas run (you need a working kubectl):
+
+```
+kube2jsonschema -o /path/to/schemas/ --strict
+```
