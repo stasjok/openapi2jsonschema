@@ -156,13 +156,6 @@ def process(
                 # Make type checker happy, cast to unknown dict
                 specification = cast(Dict, specification)
 
-            if "additionalProperties" in specification:
-                if specification["additionalProperties"]:
-                    updated = change_dict_values(
-                        specification["additionalProperties"], prefix, version
-                    )
-                    specification["additionalProperties"] = updated
-
             if strict and "properties" in specification:
                 updated = additional_properties(specification["properties"])
                 specification["properties"] = updated
