@@ -34,11 +34,8 @@ def process(
     """
     Converts a valid OpenAPI specification into a set of JSON Schema files
     """
-    if "swagger" in data:
-        version = data["swagger"]
-    elif "openapi" in data:
-        version = data["openapi"]
-    else:
+    version = data.get("swagger") or data.get("openapi")
+    if not version:
         raise ValueError(
             "cannot convert data to JSON because we could not find 'openapi' or 'swagger' keys"
         )
