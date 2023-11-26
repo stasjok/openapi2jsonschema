@@ -95,5 +95,5 @@ With this patch you can set in settings:
 To generate json-schemas run (you need a working kubectl):
 
 ```
-kube2jsonschema -o /path/to/schemas/ --strict
+kube2jsonschema -o /path/to/schemas/ --strict --only-top-level
 ```
