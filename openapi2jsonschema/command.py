@@ -147,8 +147,7 @@ def process(
             ):
                 raise UnsupportedError(f"{kind} not currently supported")
 
-            updated = change_dict_values(specification, prefix, version)
-            specification = updated
+            specification = change_dict_values(specification, prefix, version)
 
             if stand_alone:
                 base = f"{output.as_uri()}/"
@@ -156,14 +155,15 @@ def process(
                 # Make type checker happy, cast to unknown dict
                 specification = cast(Dict, specification)
 
-            if strict and "properties" in specification:
-                updated = additional_properties(specification["properties"])
-                specification["properties"] = updated
+            if "properties" in specification:
+                spec_props = specification["properties"]
+                if strict:
+                    spec_props = additional_properties(spec_props)
 
-            if kubernetes and "properties" in specification:
-                updated = replace_int_or_string(specification["properties"])
-                updated = allow_null_optional_fields(updated)
-                specification["properties"] = updated
+                if kubernetes:
+                    spec_props = replace_int_or_string(spec_props)
+                    spec_props = allow_null_optional_fields(spec_props)
+                specification["properties"] = spec_props
 
             debug(f"Generating {full_name}.json")
             with output.joinpath(f"{full_name}.json").open("w") as schema_file:
